@@ -17,7 +17,7 @@ typedef unsigned int TELEM;
 class TBitField
 {
 private:
-  int  BitLen;
+  int  BitLen;//длина битового поля
   TELEM *pMem; // память для представления битового поля
   int  MemLen; // к-во эл-тов Мем для представления бит.поля
 
