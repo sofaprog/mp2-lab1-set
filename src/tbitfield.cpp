@@ -13,6 +13,7 @@ static TBitField FAKE_BITFIELD(1);
 
 TBitField::TBitField(int len)
 {
+	if (len < 0)throw - 1;
 	BitLen = len;
 	MemLen = (BitLen + (sizeof(TELEM) * 8 - 1)) / (sizeof(TELEM) * 8);
 	pMem = new TELEM[MemLen];
@@ -55,6 +56,7 @@ int TBitField::GetLength(void) const // получить длину (к-во б�
 
 void TBitField::SetBit(const int n) // установить бит
 {
+	if (n < 0 || n > BitLen)throw -1;
 	int i = GetMemIndex(n);
 	TELEM t = GetMemMask(n);
 	pMem[i] = pMem[i] | t;
@@ -77,10 +79,11 @@ int TBitField::GetBit(const int n) const // получить значение б
 
 TBitField& TBitField::operator=(const TBitField& bf) // присваивание
 {
-	if (this== &bf) {
+	if (this!= &bf) {
 		delete[] pMem;
 		pMem = new TELEM[bf.MemLen];
-		MemLen = bf.BitLen;
+		BitLen = bf.BitLen;
+		MemLen = bf.MemLen;
 		for (int i = 0; i < MemLen; i++) {
 			pMem[i] = bf.pMem[i];
 		}
@@ -91,21 +94,19 @@ TBitField& TBitField::operator=(const TBitField& bf) // присваивание
 int TBitField::operator==(const TBitField& bf) const // сравнение,подумать как написать правильнее
 {
 	//либо от (MemLen-1)*sizeof(TELEM)*8 до BitLen;
-	if (BitLen != bf.BitLen) {
-		return 0;
-	}
-	for (int i = 0; i < MemLen; i++) {
-		if (this->GetBit(i) != bf.GetBit(i))return 0;
-	}
+	if (BitLen != bf.BitLen) return 0;
+	for (int i = 0; i < MemLen - 1; ++i)
+		if (pMem[i] != bf.pMem[i]) return 0;
+
+	for (int i = (MemLen - 1) * sizeof(TELEM) * 8; i < BitLen; i++)
+		if (GetBit(i) != bf.GetBit(i)) return 0;
 
 	return 1;
 }
 
 int TBitField::operator!=(const TBitField& bf) const // сравнение
 {
-	int r = (bf == *this);
-	if (r == 0)return 1;
-	else return 0;
+	return !(*this == bf);
 }
 
 TBitField TBitField::operator|(const TBitField& bf) // операция "или"
@@ -158,6 +159,11 @@ TBitField TBitField::operator~(void) // отрицание
 	for (int i = 0; i < MemLen; i++) {
 		result.pMem[i] = ~pMem[i];
 	}
+	//что изменилось?
+	int lastElementMask = (1 << BitLen % (sizeof(TELEM) * 8)) - 1;
+	if (BitLen % (sizeof(TELEM) * 8) != 0)
+		result.pMem[MemLen - 1] &= lastElementMask;
+
 	return result;
 }
 
